@@ -10,32 +10,44 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const saltRounds = 10; // Number of salt rounds
 const salt = bcrypt.genSaltSync(saltRounds);
-router.use(cors({ credentials: true, origin: "http://localhost:5173" }));
+router.use(cors({ credentials: true, origin: "http://localhost:3001" }));
 router.use(express.json());
 router.post("/signup", async (req, res) => {
-  const { firstname, lastname, email, password } = req.body;
+  const { name, email, password } = req.body;
   try {
     const check = await prisma.user.findFirst({
-      where: { email: email, firstname: firstname },
+      where: { email: email, name: name },
     });
+    const check1 = await prisma.user.findFirst({
+      where: { name: name },
+    });
+    console.log(check1);
+
     if (check) {
       return res.json("this email exists");
     }
-    if (!email || !password || !firstname || !lastname) {
+    if (check1) {
+      return res.json("this usename exists");
+    }
+    if (!email || !password || !name) {
       return res.json("not all arguments were receved");
     }
     const hashedPassword = await bcrypt.hash(password, salt);
+    console.log(req.bodys);
     try {
+      console.log("trys");
       const newuser = await prisma.user.create({
         data: {
-          firstname: firstname,
+          name: name,
           email,
-          lastname: lastname,
           password: hashedPassword,
         },
       });
+      console.log("passed newuser");
+      console.log(newuser);
       return res.json({ mess: "user was created succesfully", newuser });
     } catch (err) {
+      console.log(err);
       return res.json(err);
     }
   } catch (err) {
@@ -52,7 +64,7 @@ router.post("/login", async (req, res) => {
   }
   const user = await prisma.user.findFirst({
     // where: { password: password },
-    where: { firstname: name },
+    where: { name: name },
   });
   if (!user) {
     console.log("not found");
